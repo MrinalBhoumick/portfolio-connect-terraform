@@ -1,14 +1,16 @@
+# Specify the AWS region
 variable "AWS_REGION" {
   default = "ap-south-1"
 }
+
 #-------------------------Variables For Autoscaling---------------------
 variable "autoscaling_group_min_size" {
   type    = number
-  default = 2
+  default = 1
 }
 variable "autoscaling_group_max_size" {
   type    = number
-  default = 4
+  default = 2
 }
 #-------------------------Fetch AMI ID---------------------
 data "aws_ami" "latest_amazon_linux" {
@@ -18,7 +20,7 @@ data "aws_ami" "latest_amazon_linux" {
 
   filter {
     name   = "name"
-    values = ["amzn2-ami-hvm-*-x86_64-gp3"]
+    values = ["amzn2-ami-hvm-*-x86_64-gp2"]
   }
 
   filter {
