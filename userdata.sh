@@ -8,9 +8,17 @@ sudo yum install -y httpd
 sudo chkconfig httpd on
 sudo service httpd start
 
-# Deploy portfolio content with concise project details
+# Install and configure Amazon SSM Agent
+sudo yum install -y https://s3.amazonaws.com/amazon-ssm-us-east-1/latest/linux_amd64/amazon-ssm-agent.rpm
+sudo systemctl enable amazon-ssm-agent
+sudo systemctl start amazon-ssm-agent
+
+# Move the photo to the appropriate location
+sudo cp "/mnt/data/Mrinal-Photo.jpg" /var/www/html/Mrinal-Photo.jpg
+
+# Deploy portfolio content
 echo "<!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <title>Mrinal Bhoumick - Portfolio</title>
     <style>
@@ -127,11 +135,3 @@ echo "<!DOCTYPE html>
     </main>
 </body>
 </html>" | sudo tee /var/www/html/index.html
-
-# Move the photo to the appropriate location
-sudo cp "/mnt/data/Mrinal-Photo.jpg" /var/www/html/Mrinal-Photo.jpg
-
-# Install and configure Amazon SSM Agent
-sudo yum install -y https://s3.amazonaws.com/amazon-ssm-us-east-1/latest/linux_amd64/amazon-ssm-agent.rpm
-sudo systemctl enable amazon-ssm-agent
-sudo systemctl start amazon-ssm-agent
