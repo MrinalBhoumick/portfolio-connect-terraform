@@ -75,7 +75,7 @@ resource "aws_lb_target_group" "CustomTG" {
     protocol            = "HTTP" # Protocol to use for the health check
     timeout             = 5      # Time to wait for a health check response
     healthy_threshold   = 2      # Number of consecutive successes for a healthy state
-    unhealthy_threshold = 2      # Number of consecutive failures for an unhealthy state
+    unhealthy_threshold = 2
   }
 }
 #---------------------Create Security Group For Load Balancer----------------------
@@ -223,14 +223,23 @@ resource "aws_iam_instance_profile" "ec2_instance_profile" {
 
 
 #---------------------Create ASG Launch Configuration----------------------
-resource "aws_launch_configuration" "webteir_launch_config" {
-  name_prefix                 = "webtier"
-  image_id                    = data.aws_ami.latest_amazon_linux.id
-  instance_type               = "t4g.small"
-  security_groups             = [aws_security_group.ec2_sg.id]
-  iam_instance_profile        = aws_iam_instance_profile.ec2_instance_profile.name
-  associate_public_ip_address = true
-  user_data                   = file("userdata.sh")
+resource "aws_launch_template" "webteir_launch_template" {
+  name_prefix   = "webtier-"
+  image_id      = data.aws_ami.latest_amazon_linux.id
+  instance_type = "t3.micro"
+
+  iam_instance_profile {
+    name = aws_iam_instance_profile.ec2_instance_profile.name
+  }
+
+  network_interfaces {
+    security_groups             = [aws_security_group.ec2_sg.id]
+    associate_public_ip_address = true
+  }
+
+  # Use base64encode to encode the userdata script
+  user_data = base64encode(file("userdata.sh"))
+
   lifecycle {
     create_before_destroy = true
   }
@@ -238,12 +247,16 @@ resource "aws_launch_configuration" "webteir_launch_config" {
 
 #---------------------Create Autoscaling Group----------------------
 resource "aws_autoscaling_group" "autoscaling_group_webteir" {
-  depends_on           = [aws_subnet.PublicSubnet1, aws_subnet.PublicSubnet2]
-  launch_configuration = aws_launch_configuration.webteir_launch_config.id
-  min_size             = var.autoscaling_group_min_size
-  max_size             = var.autoscaling_group_max_size
-  target_group_arns    = ["${aws_lb_target_group.CustomTG.arn}"]
-  vpc_zone_identifier  = data.aws_subnets.GetSubnet.ids
+  depends_on          = [aws_subnet.PublicSubnet1, aws_subnet.PublicSubnet2]
+  min_size            = var.autoscaling_group_min_size
+  max_size            = var.autoscaling_group_max_size
+  target_group_arns   = [aws_lb_target_group.CustomTG.arn]
+  vpc_zone_identifier = data.aws_subnets.GetSubnet.ids
+
+  launch_template {
+    id      = aws_launch_template.webteir_launch_template.id
+    version = "$Latest"
+  }
 
   tag {
     key                 = "Name"
@@ -251,3 +264,4 @@ resource "aws_autoscaling_group" "autoscaling_group_webteir" {
     propagate_at_launch = true
   }
 }
+
